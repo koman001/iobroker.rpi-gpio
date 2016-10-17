@@ -27,10 +27,12 @@
 <script type="text/javascript">
     var devices = [];
     systemDictionary = {
-        "rpi-gpio adapter settings": {"en": "rpi-gpio adapter settings", "de": "rpi-gpio Adapter-Einstellungen", "ru": "Настройки драйвера rpi-gpio"},
-        "rpi-gpio settings":         {"en": "rpi-gpio settings",         "de": "rpi-gpio Einstellungen",         "ru": "Настройки rpi-gpio"},
-        "rpi-gpio addresses":        {"en": "IP addresses to rpi-gpio",  "de": "IP Adresse für Monitoring",  "ru": "Список IP адресов для мониторинга"},
-        "Interval[ms]:":         {"en": "rpi-gpio interval[ms]",     "de": "rpi-gpio Intervall[ms]",         "ru": "Интервал опроса[мс]:"}
+        "rpi-gpio adapter settings": {"en": "rpi-gpio adapter settings", "de": "rpi-gpio Adapter-Einstellungen"},
+        "rpi-gpio settings":         {"en": "rpi-gpio settings",         "de": "rpi-gpio Einstellungen"},
+        "GPIO setup":        {"en": "GPIO setup",  "de": "GPIO Einstellungen"},
+        "BCM Pin numbering mode:":   {"en": "Use BCM Pin numbering (default is connector pin): ",     "de": "BCM Pin Nummern verwenden (default ist hardware pin): "},
+        "description":  {"en":"Use 'gpio readall' on Raspi to see pin numbers (BCM and GPIO)",
+            "de": "Mit 'gpio readall' am Raspi kann man die Pin-Nummern sehen (BCM and GPIO)"}
     };
 
     function setValue(id, value, onChange) {
@@ -73,7 +75,7 @@
             setValue(key, settings[key], onChange);
         }
 
-        editTable('devices', ['name', 'ip', 'room'], devices, 350);
+        editTable('devices', ['name', 'pin', 'direction'], devices, 350);
         onChange(false);
     }
 
@@ -92,7 +94,7 @@
         });
 
         // Get edited table
-        obj.devices = getTableResult('devices', ['name', 'ip', 'room']);
+        obj.devices = getTableResult('devices', ['name', 'pin', 'direction']);
 
         callback(obj);
     }
@@ -108,9 +110,12 @@
 
     <h4 class="translate">rpi-gpio settings</h4>
     <table>
-        <tr><td class="translate">Interval[ms]:</td><td><input class="value number" id="interval" type="input" size="6"/></td></tr>
+        <tr><td class="translate">BCM Pin numbering mode:</td><td><input class="value" id="bcmmode" type="checkbox" /></td></tr>
     </table>
-    <h4 class="translate">Ping addresses</h4>
+    <h4 class="translate">GPIO setup</h4>
+    <p class="translate">description</p>
     <table id="devices"></table><div id="pager-devices"></div>
+    
+
 </div>
 </html>

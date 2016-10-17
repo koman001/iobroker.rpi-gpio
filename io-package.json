@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "rpi-gpio",
-        "version":                  "0.0.1",
+        "version":                  "0.1.0",
         "title":                    "RaspBerry Pi GPIO  Adapter",
         "desc":                     {
             "en": "This adapter allowes to use directly RaspBerry Pi's GPIO pins for input and output",
@@ -23,7 +23,7 @@
     },
     "native": {
         "devices":       [],
-        "interval":      60000
+        "bcmmode":      false
     },
     "objects": [
 

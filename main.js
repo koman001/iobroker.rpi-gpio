@@ -19,6 +19,13 @@ var util =      require('util');
 
 var isStopping = false;
 
+function stop() {
+    isStopping = true;
+    gpio.removeAllListeners();
+    gpio.destroy();
+    adapter.log.warn('Adapter disconnected and stopped');
+} 
+
 adapter.on('message', function (obj) {
     if (obj) processMessage(obj);
     processMessages();
@@ -29,13 +36,7 @@ adapter.on('ready', function () {
 });
 
 adapter.on('unload', function () {
-/*   remove exported gpio later!
-    if (timer) {
-        clearInterval(timer);
-        timer = 0;
-    }
-*/    
-    isStopping = true;
+    stop();
 });
 
 function processMessage(obj) {
@@ -62,117 +63,87 @@ function processMessages() {
     });
 }
 
-var iolist = {};
+var ioList = {};
+var idList = {};
+var pinList = {};
 var host = null;
 
-function createState(name, ip, room, callback) {
-    var id = ip.replace(/[.\s]+/g, '_');
 
-    if (room) {
-        adapter.addStateToEnum('room', room, '', host, id);
-        //adapter.addStateToEnum('room', room, '', host, id + '.ms');
+// is called if a subscribed state changes
+adapter.on('stateChange', function (id, state) {
+    // Warning, state can be null if it was deleted
+    var lid = id.split('.').slice(2).join('.');
+    var item = idList[lid];
+
+    // you can use the ack flag to detect if it is status (true) or command (false)
+    if (state && !state.ack && !(state['from'] && state['from'].endsWith('.rpi-gpio.'+adapter.instance))) {
+
+        if (!item || item.direction=='Input')
+            return adapter.log.warn(util.format('Invalid or read only item to change: %s, %j',lid,item));
+        
+        adapter.log.info('stateChange ' + id + ' to ' + util.inspect(state));
+        gpio.write(item.pin,!!state.val, function(err,val) {
+            if (err)
+                adapter.log.warn(util.format('Error (%j) when writing to %s =%j',err,id,state));
+        });
     }
+});
 
-    adapter.createState('', host, id, {
-        name:   name || ip,
-        def:    false,
-        type:   'boolean',
-        read:   'true',
-        write:  'false',
-        role:   'indicator.reachable',
-        desc:   'Ping state of ' + ip
-    }, {
-        pin: ip
-    }, callback);
 
-    /*adapter.createState('', host, id + '.ms', {
-        name:   'Response for ' + (name || ip),
-        def:    0,
-        type:   'number',
-        read:   'true',
-        write:  'false',
-        role:   'value',
-        desc:   'Response time in ms for ' + ip
-    }, {
-        ip: ip
-    }, callback);*/
-}
 
-function addState(name, ip, room, callback) {
-    adapter.getObject(host, function (err, obj) {
-        if (err || !obj) {
-            // if root does not exist, channel will not be created
-            adapter.createChannel('', host, [], function () {
+function createState(item,callback) {
+    var id = item.direction + '.' + item.name;
+    var c = {
+        type: 'state',
+        common: {
+            name:   id,
+            type:   'boolean',
+            read:   true,
+            write:  item.direction === 'Output',
+            role:   'switch',
+            desc:   JSON.stringify(item)
+        },
+        native : {
+            item:       item,
+        }
+    };
+    item.id = id;
+    idList[id] = item;
+    adapter.setObject(id,c,function(err) {
+        adapter.log.info(util.format('Created State %s with %j, err was %j',id,c,err));
+        if (item.direction=='Input') {
+            gpio.setup(item.pin,gpio.DIR_IN,gpio.EDGE_BOTH, function(err,val) {
+                if(err)
+                    return callback(err);
+                gpio.read(item.pin, function(err,val) {
+                    adapter.setState(item.id, { 
+                        val: !!val, 
+                        ack: true, 
+                        ts: Date.now()
+                    });             
+                    return callback(err);
+                });
             });
-        } 
-        createState(name, ip, room, callback);
+        } else {
+            gpio.setup(item.pin,gpio.DIR_OUT,callback);
+        }
+
     });
+ 
 }
 
-function syncConfig(callback) {
-/*
-    adapter.getStatesOf('', host, function (err, _states) {
-        var configToDelete = [];
-        var configToAdd    = [];
-        var k;
-        var id;
-        if (adapter.config.devices) {
-            for (k = 0; k < adapter.config.devices.length; k++) {
-                configToAdd.push(adapter.config.devices[k].ip);
-            }
+function handleInputs(channel, value) {
+        var item = pinList[parseInt(channel)];
+        if (!item || item.direction=='Output') {
+            return adapter.log.warn('Invalid Channel ' + channel + ', No input dfined for it!');
         }
+        adapter.log.info(util.format('Change %s to %j',item.id,value));
+        adapter.setState(item.id, { 
+            val: !!value, 
+            ack: true, 
+            ts: Date.now()
+        });
 
-        if (_states) {
-            for (var j = 0; j < _states.length; j++) {
-                var ip = _states[j].native.ip;
-                id = ip.replace(/[.\s]+/g, '_');
-                var pos = configToAdd.indexOf(ip);
-                if (pos != -1) {
-                    configToAdd.splice(pos, 1);
-                    // Check name and room
-                    for (var u = 0; u < adapter.config.devices.length; u++) {
-                        if (adapter.config.devices[u].ip == ip) {
-                            if (_states[j].common.name != (adapter.config.devices[u].name || adapter.config.devices[u].ip)) {
-                                adapter.extendObject(_states[j]._id, {common: {name: (adapter.config.devices[u].name || adapter.config.devices[u].ip)}});
-                            }
-                            if (adapter.config.devices[u].room) {
-                                adapter.addStateToEnum('room', adapter.config.devices[u].room, '', host, id);
-                            } else {
-                                adapter.deleteStateFromEnum('room', '', host, id);
-                            }
-                        }
-                    }
-                } else {
-                    configToDelete.push(ip);
-                }
-            }
-        }
-
-        if (configToAdd.length) {
-            var count = 0;
-            for (var r = 0; r < adapter.config.devices.length; r++) {
-                if (configToAdd.indexOf(adapter.config.devices[r].ip) != -1) {
-                    count++;
-                    addState(adapter.config.devices[r].name, adapter.config.devices[r].ip, adapter.config.devices[r].room, function () {
-                        if (!--count && callback) callback();
-                    });
-                }
-            }
-        }
-        if (configToDelete.length) {
-            for (var e = 0; e < configToDelete.length; e++) {
-                id = configToDelete[e].replace(/[.\s]+/g, '_');
-                adapter.deleteStateFromEnum('room', '',  host, id);
-                //adapter.deleteStateFromEnum('room', '',  host, id + '.ms');
-                adapter.deleteState('', host, id);
-                //adapter.deleteState('', host, id + '.ms');
-            }
-        }
-        if (!count && callback) callback();
-    });
-    */
-    if (callback)
-        callback();
 }
 
 function main() {
@@ -184,16 +155,43 @@ function main() {
         return;
     }
 
+    if (adapter.config.bcmmode) {
+        adapter.log.info('BCM Pin numbering mode enabled');        
+    }
+
 //    if (adapter.config.interval < 5000) adapter.config.interval = 5000;
 
     async.eachSeries(adapter.config.devices, function(item,callback) {
-            adapter.log.info(util.format('Init item %j',item));
-            ioList.push(item);
-            callback();
+            adapter.log.info(util.format('Init item %s',util.inspect(item)));
+            if (item.name)
+                item.name = item.name.trim();
+            if (!item.name || item.name.length<2)
+                return callback(util.format("Invalid item name '%j', must be at least 2 letters long",item.name));
+            if (ioList[item.name])
+                return callback(util.format("Double item name '%s', names cannot be used more than once!", item.name));
+            var pin = parseInt(item.pin);
+            if (pinList[pin]) {
+                    return callback(util.format("Double pin number '%d', pin numbers can be used only once!", pin));
+                }
+            item.pin = pin;
+            var dir = item.direction.trim().toLowerCase();
+            if (['output','ausgang','out'].indexOf(dir)>=0 || dir.startsWith('o'))
+                dir = 'Output';
+            else
+                dir = 'Input';
+            item.direction = dir;
+            ioList[item.name] = item;
+            pinList[pin] = item;
+            adapter.log.info(util.format('Init item %s',util.inspect(item)));
+            createState(item,callback);
     },function(err){
-        if(err)
+        if(err) {
             adapter.log.warn(util.format('Rpi GPIO adapter initialize error %j',err));
-        adapter.log.info(util.format('Rpi GPIO adapter initialized %d pins',Object.keys(ioList).length));
+            return stop();
+        }
+        adapter.log.info(util.format('Rpi GPIO adapter initialized %d pins %j',Object.keys(ioList).length,pinList));
+        adapter.subscribeStates('*'); // subscribe to states only now
+        gpio.on('change', handleInputs); // subscribe to input changes
     });
 }
 

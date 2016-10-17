@@ -12,12 +12,12 @@ iobroker FJPING Adapter für BT (LE) und Netzwerk
 WHatever comes
 
 ## Changelog
-### 0.0.1
-* frankjoke first rename
+### 0.1.0
+* Ok, my first working version in both directions!
 
 ## Install
 
-```add with iobroker Admin the git```
+```add with iobroker Admin  Adapter the git repo```
 
 ## Configuration
 
