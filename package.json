@@ -1,0 +1,42 @@
+{
+  "name": "iobroker.rpi-gpio",
+  "description": "This adapter interfaces ioBroker with Raspberry GPIO pins",
+  "version": "0.0.1",
+  "author": "frankjoke <frankjoke@hotmail.com>",
+  "contributors": [
+    "frankjoke <frankjoke@hotmail.com>"
+  ],
+  "homepage": "https://github.com/frankjoke/iobroker.rpi-gpio",
+  "license": "MIT",
+  "keywords": [
+    "iobroker",
+    "Rpi",
+    "home automation",
+    "Raspberry",
+    "GPIO"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/frankjoke/iobroker.rpi-gpio"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "grunt": "^1.0.1",
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-http": "^2.0.1",
+    "grunt-jscs": "^3.0.1",
+    "grunt-replace": "^1.0.1",
+    "mocha": "^2.3.4"
+  },
+  "bugs": {
+    "url": "https://github.com/frankjoke/iobroker.rpi-gpio/issues"
+  },
+  "main": "main.js",
+  "scripts": {
+    "test": "node node_modules/mocha/bin/mocha"
+  },
+  "dependencies": {
+    "async": "^2.1.2",
+    "rpi-gpio": "^0.7.0"
+  }
+}

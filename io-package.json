@@ -1,0 +1,31 @@
+{
+    "common": {
+        "name":                     "rpi-gpio",
+        "version":                  "0.0.1",
+        "title":                    "RaspBerry Pi GPIO  Adapter",
+        "desc":                     {
+            "en": "This adapter allowes to use directly RaspBerry Pi's GPIO pins for input and output",
+            "de": "Dieser Adapter ermöglicht die GPIO Pins vom RaspBerry Pi als Ein/Ausgänge zu nutzen"
+        },
+        "authors": [
+            "frankjoke <frankjoke@hotmail.com>"
+        ],
+        "license":                  "MIT",
+        "platform":                 "Javascript/Node.js",
+        "mode":                     "daemon",
+        "availableModes":           ["daemon"],
+        "readme":                   "https://github.com/frankjoke/iobroker.rpi-gpio/blob/master/README.md",
+        "loglevel":                 "info",
+        "icon":                     "rpi-gpio.png",
+        "keywords":                 ["GPIO", "Rpi", "Raspberry"],
+        "extIcon":                  "https://raw.githubusercontent.com/frankjoke/iobroker.rpi-gpio/master/admin/rpi-gpio.png",
+		"type":                     "hardware"
+    },
+    "native": {
+        "devices":       [],
+        "interval":      60000
+    },
+    "objects": [
+
+    ]
+}
