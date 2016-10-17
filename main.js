@@ -10,11 +10,13 @@
 /* jshint -W097 */// jshint strict:false
 /*jslint node: true */
 "use strict";
-var utils   = require(__dirname + '/lib/utils'); // Get common adapter utils
-var adapter = utils.adapter('rpi-gpio');
+var utils   =   require(__dirname + '/lib/utils'); // Get common adapter utils
+var adapter =   utils.adapter('rpi-gpio');
 
-var timer     = null;
-var stopTimer = null;
+var async =     require('async');
+var gpio =      require('rpi-gpio');
+var util =      require('util');
+
 var isStopping = false;
 
 adapter.on('message', function (obj) {
@@ -27,10 +29,12 @@ adapter.on('ready', function () {
 });
 
 adapter.on('unload', function () {
+/*   remove exported gpio later!
     if (timer) {
         clearInterval(timer);
         timer = 0;
     }
+*/    
     isStopping = true;
 });
 
@@ -58,56 +62,8 @@ function processMessages() {
     });
 }
 
-// Terminate adapter after 30 seconds idle
-function stop() {
-    if (stopTimer) clearTimeout(stopTimer);
-
-    // Stop only if schedule mode
-    if (adapter.common && adapter.common.mode == 'schedule') {
-        stopTimer = setTimeout(function () {
-            stopTimer = null;
-            if (timer) clearInterval(timer);
-            isStopping = true;
-            adapter.stop();
-        }, 30000);
-    }
-}
-
-var host  = ''; // Name of the PC, where the ping runs
-
-function pingAll(hosts) {
-    if (stopTimer) clearTimeout(stopTimer);
-
-    if (!hosts) {
-        hosts = [];
-        for (var i = 0; i < adapter.config.devices.length; i++) {
-            hosts.push(adapter.config.devices[i].ip);
-        }
-    }
-    if (!hosts.length) {
-        timer = setTimeout(function () {
-            pingAll();
-        }, adapter.config.interval);
-        return;
-    }
-
-    var ip = hosts.pop();
-    adapter.log.debug('Pinging ' + ip);
-
-    ping.probe(ip, {log: adapter.log.debug}, function (err, result) {
-        if (err) adapter.log.error(err);
-        if (result) {
-            adapter.log.debug('Ping result for ' + result.host + ': ' + result.alive + ' in ' + (result.ms === null ? '-' : result.ms) + 'ms');
-            adapter.setState({device: '', channel: host, state: result.host.replace(/[.\s]+/g, '_')},         {val: result.alive, ack: true});
-            adapter.setState({device: '', channel: host, state: result.host.replace(/[.\s]+/g, '_') + '.ms'}, {val: result.ms,    ack: true});
-        }
-        if (!isStopping) {
-            setTimeout(function () {
-                pingAll(hosts);
-            }, 0);
-        }
-    });
-}
+var iolist = {};
+var host = null;
 
 function createState(name, ip, room, callback) {
     var id = ip.replace(/[.\s]+/g, '_');
@@ -126,7 +82,7 @@ function createState(name, ip, room, callback) {
         role:   'indicator.reachable',
         desc:   'Ping state of ' + ip
     }, {
-        ip: ip
+        pin: ip
     }, callback);
 
     /*adapter.createState('', host, id + '.ms', {
@@ -147,15 +103,14 @@ function addState(name, ip, room, callback) {
         if (err || !obj) {
             // if root does not exist, channel will not be created
             adapter.createChannel('', host, [], function () {
-                createState(name, ip, room, callback);
             });
-        } else {
-            createState(name, ip, room, callback);
-        }
+        } 
+        createState(name, ip, room, callback);
     });
 }
 
 function syncConfig(callback) {
+/*
     adapter.getStatesOf('', host, function (err, _states) {
         var configToDelete = [];
         var configToAdd    = [];
@@ -215,21 +170,30 @@ function syncConfig(callback) {
         }
         if (!count && callback) callback();
     });
+    */
+    if (callback)
+        callback();
 }
 
 function main() {
     host = adapter.host;
 
     if (!adapter.config.devices.length) {
-        adapter.log.warn('No one IP configured for ping');
+        adapter.log.warn('No GPIO pins are configured! Will stop Adapter');
         stop();
         return;
     }
 
-    if (adapter.config.interval < 5000) adapter.config.interval = 5000;
+//    if (adapter.config.interval < 5000) adapter.config.interval = 5000;
 
-    syncConfig(function () {
-        pingAll();
+    async.eachSeries(adapter.config.devices, function(item,callback) {
+            adapter.log.info(util.format('Init item %j',item));
+            ioList.push(item);
+            callback();
+    },function(err){
+        if(err)
+            adapter.log.warn(util.format('Rpi GPIO adapter initialize error %j',err));
+        adapter.log.info(util.format('Rpi GPIO adapter initialized %d pins',Object.keys(ioList).length));
     });
 }
 
