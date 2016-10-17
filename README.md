@@ -1,11 +1,6 @@
 ![Logo](admin/rpi-gpio.png)
-iobroker FJPING Adapter für BT (LE) und Netzwerk
+ioBroker rpi-gpio Adapter für Raspberyy Pi
 ==============
-[x!x[xNPM version](http://img.shields.io/npm/v/iobroker.rpi-gpio.svg)](https://www.npmjs.com/package/iobroker.rpi-gpio)
-[x!x[xDownloads](https://img.shields.io/npm/dm/iobroker.rpi-gpio.svg)](https://www.npmjs.com/package/iobroker.rpi-gpio)
-[x!x[xTests](https://travis-ci.org/iobroker/iobroker.rpi-gpio.svg?branch=master)](https://travis-ci.org/iobroker/iobroker.rpi-gpio)
-
-[x!x[xNPM](https://nodei.co/npm/iobroker.fjping.png?downloads=true)](https://nodei.co/npm/iobroker.rpi-gpio/)
 
 # Use RaspBeryy GPIO pins directly in ioBroker
 
