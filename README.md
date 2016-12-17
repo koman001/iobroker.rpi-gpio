@@ -1,4 +1,12 @@
 ![Logo](admin/rpi-gpio.png)
+
+[![NPM version](http://img.shields.io/npm/v/iobroker.rpi-gpio.svg)](https://www.npmjs.com/package/iobroker.rpi-gpio)
+[![Downloads](https://img.shields.io/npm/dm/iobroker.rpi-gpio.svg)](https://www.npmjs.com/package/iobroker.rpi-gpio)
+**Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.rpi-gpio/master.svg)](https://travis-ci.org/frankjoke/iobroker.rpi-gpio)
+Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/iobroker.rpi-gpio?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-nut/)
+
+
+[![NPM](https://nodei.co/npm/iobroker.rpi-gpio.png?downloads=true)](https://nodei.co/npm/iobroker.rpi-gpio/)
 ioBroker rpi-gpio Adapter für Raspberyy Pi
 ==============
 
